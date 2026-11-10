@@ -554,3 +554,7 @@ body.menu-open .nav__burger i { background: #000; }
   .chapter .notes li:nth-child(n + 3) { display: none; }
   .chapter__copy .eyebrow { display: none; }
 }
+
+@media (max-width: 900px) {
+  .chapter__copy, .chapter--r .chapter__copy { transition: opacity 0.4s ease, transform 0.7s var(--ease); }
+}

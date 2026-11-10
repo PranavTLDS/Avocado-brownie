@@ -530,10 +530,14 @@ function placePlate() {
   const progress = (r) => clamp01(-r.top / Math.max(1, r.height - vh));
   const lightNotes = (c, p) => c.notes.forEach((li, k) => li.classList.toggle('on', p * (c.notes.length + 0.4) > k + 0.2));
 
+  const phone = innerWidth <= 900;
   [plate, plate2].forEach((c) => {
     if (!c) return;
     const r = c.el.getBoundingClientRect();
-    c.el.classList.toggle('in', r.top < vh * 0.6 && r.bottom > vh * 0.45);
+    // Phones: the plate is fixed above the copy, so each copy block must be gone BEFORE it starts
+    // scrolling up underneath the plate (i.e. before its pinned section releases), and the next
+    // one appears only as the plate finishes flipping.
+    c.el.classList.toggle('in', phone ? r.top < vh * 0.4 && r.bottom > vh * 1.15 : r.top < vh * 0.6 && r.bottom > vh * 0.45);
     lightNotes(c, progress(r));
   });
   if (!stage) return;

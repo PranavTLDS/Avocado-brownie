@@ -212,7 +212,7 @@ export function createScene(canvas, plates) {
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.03).texture;
   scene.environmentIntensity = 0.42;
 
-  const key = new THREE.DirectionalLight(0xfff0e0, 2.0);
+  const key = new THREE.DirectionalLight(0xfff0e0, 1.55);
   key.position.set(-4, 5, 7);
   scene.add(key);
   const warm = new THREE.PointLight(0xff6d25, 30, 14, 1.6); // brand-orange rim light from behind
@@ -234,7 +234,7 @@ export function createScene(canvas, plates) {
 
   const topMat = new THREE.MeshPhysicalMaterial({
     color: 0x000000, emissive: 0xffffff, roughness: 1, metalness: 0,
-    clearcoat: 1, clearcoatRoughness: 0.17, clearcoatMap: glazeMap,
+    clearcoat: 0.7, clearcoatRoughness: 0.24, clearcoatMap: glazeMap,
     transparent: false, side: THREE.DoubleSide,
   });
   const underMat = new THREE.MeshPhysicalMaterial({
