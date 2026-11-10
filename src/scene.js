@@ -301,6 +301,7 @@ export function createScene(canvas, plates) {
   const target = { fx: 0, fy: 0, s: 1, tilt: -0.6, flip: 0, flipx: 0, alpha: 1 };
   const cur = { ...target };
   const world = { w: 10, h: 5.4 };
+  let lift = 0; // raw (unsmoothed) upward shift, so the plate rides exactly with the page when its section releases
   let spinVel = 0.0028;
   let dragging = false;
   let lastX = 0;
@@ -393,15 +394,22 @@ export function createScene(canvas, plates) {
     const fx = cur.flipx;
     const which = f + fx < 0.5 ? 0 : 1;
     if (which !== shown) show(which);
-    tilt.rotation.y = (f < 0.5 ? f : f - 1) * Math.PI + mouse.x * 0.24;
+    // The plate is rarely on the camera's axis, so it is seen from slightly below / aside. The flip must
+    // therefore be exactly edge-on to THAT line of sight at its midpoint (where the photo swaps), or a
+    // sliver of the underside shows.
+    const baseX = cur.fx * world.w;
+    const baseY = (cur.fy + lift) * world.h;
+    const edgeY = Math.PI / 2 - Math.atan2(baseX, camera.position.z);
+    const edgeX = Math.PI / 2 - Math.atan2(baseY, camera.position.z);
+    tilt.rotation.y = (f < 0.5 ? f : f - 1) * 2 * edgeY + mouse.x * 0.24;
     // vertical flip: the bottom edge swings up and over, and the other side comes round from below
-    flipG.rotation.x = -(fx < 0.5 ? fx : fx - 1) * Math.PI;
+    flipG.rotation.x = -(fx < 0.5 ? fx : fx - 1) * 2 * edgeX;
     const turn = Math.max(f, fx); // 0 at rest, 1 when the flip is done
     const flat = Math.abs(Math.cos(turn * Math.PI)); // 1 at rest, 0 exactly edge-on
     tilt.rotation.x = (cur.tilt + mouse.y * 0.14) * flat + Math.sin(t * 0.6) * 0.02;
 
     const hop = Math.sin(Math.max(f, fx) * Math.PI); // a small lift at the middle of the flip, like a tossed coin
-    rig.position.set(cur.fx * world.w - mouse.x * 0.06, cur.fy * world.h + Math.sin(t * 0.9) * 0.045 + hop * 0.14, 0);
+    rig.position.set(cur.fx * world.w - mouse.x * 0.06, (cur.fy + lift) * world.h + Math.sin(t * 0.9) * 0.045 + hop * 0.14, 0);
     rig.scale.setScalar(Math.max(0.0001, cur.s * intro.s * (1 + hop * 0.05)));
 
     // the key light follows the cursor, so the glaze highlight glides across the rim
@@ -435,6 +443,9 @@ export function createScene(canvas, plates) {
     },
     setTarget(p) {
       Object.assign(target, p);
+    },
+    setLift(v) {
+      lift = v;
     },
     snap() {
       Object.assign(cur, target);

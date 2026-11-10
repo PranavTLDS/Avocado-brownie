@@ -440,8 +440,8 @@ function initHome() {
   const plateEl = $('#signatures');
   const plateEl2 = $('#ch-plate2');
   chapters = {
-    plate: plateEl && { el: plateEl, notes: $$('.notes--live li', plateEl) },
-    plate2: plateEl2 && { el: plateEl2, notes: $$('.notes--live li', plateEl2) },
+    plate: plateEl && { el: plateEl, pin: $('.chapter__pin', plateEl), notes: $$('.notes--live li', plateEl) },
+    plate2: plateEl2 && { el: plateEl2, pin: $('.chapter__pin', plateEl2), notes: $$('.notes--live li', plateEl2) },
   };
   if (heroP) {
     try {
@@ -527,36 +527,49 @@ function placePlate() {
   if (!chapters) return;
   const vh = homeVH || innerHeight;
   const { plate, plate2 } = chapters;
+  const phone = innerWidth <= 900;
   const progress = (r) => clamp01(-r.top / Math.max(1, r.height - vh));
   const lightNotes = (c, p) => c.notes.forEach((li, k) => li.classList.toggle('on', p * (c.notes.length + 0.4) > k + 0.2));
+  const far = { top: vh * 9, bottom: vh * 10, height: vh };
+  const r1 = plate ? plate.el.getBoundingClientRect() : far;
+  const r2 = plate2 ? plate2.el.getBoundingClientRect() : null;
 
-  const phone = innerWidth <= 900;
-  [plate, plate2].forEach((c) => {
+  [plate, plate2].forEach((c, i) => {
     if (!c) return;
-    const r = c.el.getBoundingClientRect();
-    // Phones: the plate is fixed above the copy, so each copy block must be gone BEFORE it starts
-    // scrolling up underneath the plate (i.e. before its pinned section releases), and the next
-    // one appears only as the plate finishes flipping.
-    c.el.classList.toggle('in', phone ? r.top < vh * 0.4 && r.bottom > vh * 1.15 : r.top < vh * 0.6 && r.bottom > vh * 0.45);
-    lightNotes(c, progress(r));
+    const r = i ? r2 : r1;
+    let on;
+    let p;
+    if (phone) {
+      // Phones: ONE continuous pinned story, like desktop. Chapter 2 overlaps chapter 1's release
+      // zone (see CSS), so the first text stays put until the plate starts to flip, the second
+      // appears once it has flipped, and nothing scrolls away until the whole section is done.
+      on = i === 0 ? r.top < vh * 0.4 && (r2 ? r2.top > vh * 0.55 : r.bottom > vh * 0.6) : r.top < vh * 0.3 && r.bottom > vh * 0.25;
+      p = i === 0 ? clamp01((vh * 0.4 - r.top) / (vh * 0.85)) : clamp01((vh * 0.3 - r.top) / (vh * 1.3));
+    } else {
+      on = r.top < vh * 0.6 && r.bottom > vh * 0.45;
+      p = progress(r);
+    }
+    c.el.classList.toggle('in', on);
+    lightNotes(c, p);
   });
   if (!stage) return;
   const ww = stage.world().w;
-  const wide = innerWidth > 900; // same breakpoint as the CSS layout
+  const wide = !phone; // same breakpoint as the CSS layout
   const m = wide ? null : mobilePoses(ww);
   const H = wide ? { fx: 0, fy: -0.02, s: ww / 11.4, tilt: -0.62 } : m.H;
   const D1 = wide ? { fx: -0.215, fy: 0, s: ww / 11, tilt: -0.24 } : m.D;
   const D2 = wide ? { ...D1, fx: 0.215 } : D1;
-  const far = { top: vh * 9, bottom: vh * 10 };
-  const r1 = plate ? plate.el.getBoundingClientRect() : far;
-  const r2 = plate2 ? plate2.el.getBoundingClientRect() : null;
   const last = r2 || r1;
   const a = ease(clamp01((vh - r1.top) / vh));
   const b = r2 ? ease(clamp01((vh - r2.top) / vh)) : 0;
-  const leave = ease(clamp01(1 - (last.bottom - vh * 0.35) / (vh * 0.65)));
+  // desktop: the plate lifts away and fades. phones: it simply scrolls up WITH its text when the pinned section releases.
+  const leave = wide ? ease(clamp01(1 - (last.bottom - vh * 0.35) / (vh * 0.65))) : 0;
+  const pinTop = !wide && (plate2 || plate)?.pin ? (plate2 || plate).pin.getBoundingClientRect().top : 0;
+  const lift = !wide ? Math.max(0, -pinTop) / vh : 0;
   const pose = mix(mix(H, D1, a), D2, b);
   stage.setTarget({ ...pose, fy: pose.fy + leave * 0.95, s: pose.s * (1 - leave * 0.25), flip: wide ? b : 0, flipx: wide ? 0 : b, alpha: 1 - leave });
-  leave >= 1 ? stage.stop() : stage.start();
+  stage.setLift(lift);
+  leave >= 1 || lift > 1.15 ? stage.stop() : stage.start();
 }
 
 // ── product ─────────────────────────────────────────────────
