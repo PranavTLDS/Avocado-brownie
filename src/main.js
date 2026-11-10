@@ -543,8 +543,9 @@ function placePlate() {
       // Phones: ONE continuous pinned story, like desktop. Chapter 2 overlaps chapter 1's release
       // zone (see CSS), so the first text stays put until the plate starts to flip, the second
       // appears once it has flipped, and nothing scrolls away until the whole section is done.
-      on = i === 0 ? r.top < vh * 0.4 && (r2 ? r2.top > vh * 0.55 : r.bottom > vh * 0.6) : r.top < vh * 0.3 && r.bottom > vh * 0.25;
-      p = i === 0 ? clamp01((vh * 0.4 - r.top) / (vh * 0.85)) : clamp01((vh * 0.3 - r.top) / (vh * 1.3));
+      // the first text hands over to the second exactly when the plate is edge-on (flip midpoint)
+      on = i === 0 ? r.top < vh * 0.4 && (r2 ? r2.top > vh * 0.5 : r.bottom > vh * 0.6) : r.top <= vh * 0.5 && r.bottom > vh * 0.25;
+      p = i === 0 ? clamp01((vh * 0.4 - r.top) / Math.max(1, vh * 0.4 - r.top + (r2 ? Math.max(0, r2.top - vh * 0.5) : 0))) : clamp01((vh * 0.5 - r.top) / (vh * 1.6));
     } else {
       on = r.top < vh * 0.6 && r.bottom > vh * 0.45;
       p = progress(r);

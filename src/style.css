@@ -547,10 +547,6 @@ body.menu-open .nav__burger i { background: #000; }
   .chapter .sig__buy { width: 100%; }
   .chapter .sig__buy .btn { height: 48px; padding: 0 22px; }
 }
-@media (max-width: 900px) and (max-height: 720px) {
-  .chapter .notes li:nth-child(n + 3) { display: none; }
-  .chapter__copy .eyebrow { display: none; }
-}
 
 @media (max-width: 900px) {
   .chapter__copy, .chapter--r .chapter__copy { transition: opacity 0.4s ease, transform 0.7s var(--ease); }
@@ -563,4 +559,23 @@ body.menu-open .nav__burger i { background: #000; }
   .chapter { height: 200vh; height: 200svh; }
   /* chapter 2 starts while chapter 1 is still pinned, so the plate can flip in place */
   .chapter--r { margin-top: -100vh; margin-top: -100svh; }
+}
+
+
+/* ───────── v9: phone story = longer hold, fuller content, as on desktop ───────── */
+@supports (overflow-x: clip) { body { overflow-x: clip; } } /* hidden would make body a scroll container and can break position: sticky on iOS */
+@media (max-width: 900px) {
+  .chapter { height: 280vh; height: 280svh; }
+  .chapter--r { height: 230vh; height: 230svh; }
+  .chapter__copy .eyebrow { display: inline-flex; }
+  .chapter__copy .lede { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; max-width: none; font-size: 15px; line-height: 1.5; }
+  /* big faint numerals behind the plate, as a quiet nod to the desktop depth */
+  .chapter__pin::before { position: absolute; z-index: 0; top: calc(var(--nav-h) + 1vh); right: -3vw; font-family: var(--hand); font-size: 64vw; line-height: 0.8; color: rgba(255, 246, 234, 0.05); pointer-events: none; }
+  #signatures .chapter__pin::before { content: '01'; }
+  #ch-plate2 .chapter__pin::before { content: '02'; right: auto; left: -3vw; }
+}
+@media (max-width: 900px) and (max-height: 760px) { .chapter__copy .lede { display: none; } }
+@media (max-width: 900px) and (max-height: 640px) {
+  .chapter .notes li:nth-child(n + 3) { display: none; }
+  .chapter__copy .eyebrow { display: none; }
 }
