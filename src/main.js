@@ -516,7 +516,7 @@ function mobilePoses(ww) {
   const copy = $('#signatures .chapter__copy');
   if (copy) {
     const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64;
-    const f = fit(navH + 6, copy.offsetTop - 14, innerWidth - 40);
+    const f = fit(navH + 6, Math.max(copy.offsetTop, navH + 150) - 14, innerWidth - 40);
     D = { fx: 0, fy: 0.5 - f.cy / vh, s: k(f.d), tilt: -0.34 };
   }
   poseCache = { H, D, ww, vh };
@@ -533,7 +533,7 @@ function placePlate() {
   [plate, plate2].forEach((c) => {
     if (!c) return;
     const r = c.el.getBoundingClientRect();
-    c.el.classList.toggle('in', r.top < vh * 0.4 && r.bottom > vh * 0.7);
+    c.el.classList.toggle('in', r.top < vh * 0.6 && r.bottom > vh * 0.45);
     lightNotes(c, progress(r));
   });
   if (!stage) return;

@@ -539,3 +539,18 @@ body.menu-open .nav__burger i { background: #000; }
   .hero__split .script { font-size: clamp(54px, 19.5vw, 120px); line-height: 0.85; }
   .hero__foot { position: static; gap: 14px; }
 }
+
+/* ───────── v6: phone story sections sized to the VISIBLE screen (svh), compact copy ───────── */
+@media (max-width: 900px) {
+  .chapter { height: 190vh; height: 190svh; }
+  .chapter__pin { height: 100vh; height: 100svh; padding: var(--nav-h) var(--pad) max(24px, env(safe-area-inset-bottom)); }
+  .chapter__copy, .chapter--r .chapter__copy { gap: 12px; max-width: none; width: 100%; }
+  .chapter__copy .display { font-size: clamp(30px, 9.5vw, 46px); }
+  .chapter .notes li { padding: 9px 0; font-size: 14.5px; }
+  .chapter .sig__buy { width: 100%; }
+  .chapter .sig__buy .btn { height: 48px; padding: 0 22px; }
+}
+@media (max-width: 900px) and (max-height: 720px) {
+  .chapter .notes li:nth-child(n + 3) { display: none; }
+  .chapter__copy .eyebrow { display: none; }
+}
