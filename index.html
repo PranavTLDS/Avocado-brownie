@@ -70,12 +70,21 @@
     </header>
 
     <div class="menu" id="menu" aria-hidden="true">
-      <a href="#/">Home</a>
-      <a href="#/shop">Shop</a>
-      <a href="#/" data-scroll="signatures">Signatures</a>
-      <a href="#/" data-scroll="film">Film</a>
-      <a href="#/" data-scroll="cafe">The café</a>
-      <p class="script">Baked with love, craved forever!</p>
+      <nav class="menu__nav" aria-label="Menu">
+        <a href="#/" style="--i:0"><span class="menu__n">01</span><span class="menu__line"><span>Home</span></span></a>
+        <a href="#/shop" style="--i:1"><span class="menu__n">02</span><span class="menu__line"><span>Shop</span></span></a>
+        <a href="#/" data-scroll="signatures" style="--i:2"><span class="menu__n">03</span><span class="menu__line"><span>Signatures</span></span></a>
+        <a href="#/" data-scroll="film" style="--i:3"><span class="menu__n">04</span><span class="menu__line"><span>Film</span></span></a>
+        <a href="#/" data-scroll="cafe" style="--i:4"><span class="menu__n">05</span><span class="menu__line"><span>The café</span></span></a>
+      </nav>
+      <div class="menu__foot">
+        <p class="menu__tag">Baked with love, craved forever!</p>
+        <div class="menu__btns">
+          <a class="menu__btn" href="#/shop">Shop the bakes</a>
+          <button class="menu__btn menu__btn--line" type="button" data-open-bag>Your bag</button>
+        </div>
+      </div>
+      <div class="menu__plate" aria-hidden="true"><img src="/img/plates/milkcake.webp" alt="" width="520" height="520"></div>
     </div>
 
     <main id="app"></main>

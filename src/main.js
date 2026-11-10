@@ -148,8 +148,7 @@ const footer = () => {
       <div><h4>Your order</h4><button type="button" data-open-bag>Your bag</button><a href="#/checkout">Checkout</a><button type="button" data-top>Back to top</button></div>
     </div>
   </div>
-  <p class="foot__play" aria-hidden="true">Go on, poke the letters</p>
-  <div class="foot__mark" aria-hidden="true">${[...WORD].map((ch) => `<span>${ch === '&' ? '&amp;' : ch}</span>`).join('')}</div>
+  <div class="foot__mark reveal" aria-hidden="true">${[...WORD].map((ch, i) => `<span style="--i:${i}">${ch === '&' ? '&amp;' : ch}</span>`).join('')}</div>
   <div class="foot__base"><span>© ${new Date().getFullYear()} avocado&amp;brownies</span><span>Baked fresh, every day</span><button type="button" data-top>Back to top ↑</button></div>
 </footer>`;
 };
@@ -174,12 +173,12 @@ function featured() {
 
 function homeView() {
   const { heroP, plates, duo, used } = featured();
-  const lead = heroP || PRODUCTS[0];
   return `
   <canvas class="stage" id="stage" aria-hidden="true"></canvas>
   <section class="hero" id="hero">
     <h1 class="hero__type" aria-label="Baked with love, craved forever.">
       <span class="ln ln--top"><span>Baked with love,</span></span>
+      <span class="hero__slot" id="heroSlot" aria-hidden="true"></span>
       <span class="hero__split" aria-hidden="true">
         <span class="ln ln--l"><span class="script">craved</span></span>
         <span class="ln ln--r"><span class="script">forever.</span></span>
@@ -192,14 +191,6 @@ function homeView() {
           <a class="btn btn--solid" href="#/shop">Shop the bakes</a>
           <a class="btn btn--ghost" href="#/" data-scroll="film"><i class="play"></i>Watch the film</a>
         </div>
-      </div>
-      <div class="hero__dish">
-        <div class="hero__dishinfo">
-          <span class="eyebrow">${esc(lead.tag || 'From the counter')}</span>
-          <strong>${esc(lead.name)}</strong>
-          <span>${money(lead.price)}</span>
-        </div>
-        <button class="add add--lg" data-add="${lead.id}"><span>Add to bag</span><i>+</i></button>
       </div>
     </div>
     <div class="hero__hint"><span>Drag to spin the plate</span><i></i><span>Scroll to taste</span></div>
@@ -415,7 +406,6 @@ function render(opts = {}) {
   if (r.name === 'checkout') initCheckout();
   if (r.name === 'admin') initAdmin({ rerender: () => render(), toast, lockScroll: (on) => (on ? lenis.stop() : lenis.start()) });
   initReveals();
-  initFooter();
   initTilt();
   collectParallax();
   if (pendingScroll) {
@@ -433,8 +423,19 @@ function scrollToId(id) {
 // ── home ────────────────────────────────────────────────────
 let introDone = false;
 let chapters = null;
+let homeVH = 0;
+let poseCache = null;
+let heroRO = null;
 function initHome() {
   const canvas = $('#stage');
+  homeVH = canvas.clientHeight || innerHeight;
+  poseCache = null;
+  document.fonts?.ready.then(() => (poseCache = null));
+  heroRO?.disconnect();
+  if ('ResizeObserver' in window && $('#hero')) {
+    heroRO = new ResizeObserver(() => (poseCache = null));
+    heroRO.observe($('#hero'));
+  }
   const { heroP, plates } = featured();
   const plateEl = $('#signatures');
   const plateEl2 = $('#ch-plate2');
@@ -484,7 +485,7 @@ function heroIn() {
     .fromTo('.hero__type .ln--top > span', { yPercent: 115 }, { yPercent: 0, duration: 1.5 }, 0.15)
     .fromTo('.hero__type .ln--l > span', { xPercent: 60, opacity: 0 }, { xPercent: 0, opacity: 1, duration: 2 }, 0.2)
     .fromTo('.hero__type .ln--r > span', { xPercent: -60, opacity: 0 }, { xPercent: 0, opacity: 1, duration: 2 }, 0.2)
-    .fromTo('.hero__left, .hero__dish, .hero__hint', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1, stagger: 0.08 }, 0.7);
+    .fromTo('.hero__left, .hero__hint', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1, stagger: 0.08 }, 0.7);
 }
 
 // The plate's journey: centre stage in the hero → docks beside its own story →
@@ -492,9 +493,39 @@ function heroIn() {
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const ease = (t) => t * t * (3 - 2 * t);
 const mix = (a, b, t) => ({ fx: a.fx + (b.fx - a.fx) * t, fy: a.fy + (b.fy - a.fy) * t, s: a.s + (b.s - a.s) * t, tilt: a.tilt + (b.tilt - a.tilt) * t });
+// Phones: the plate is fitted to real spaces in the layout, so it can never sit on top of text.
+//   hero     → the slot between the two headline lines
+//   chapters → the area above the story copy
+function mobilePoses(ww) {
+  const vh = homeVH || innerHeight;
+  if (poseCache && poseCache.ww === ww && poseCache.vh === vh) return poseCache;
+  const canvas = $('#stage');
+  const cw = canvas?.clientWidth || innerWidth;
+  const k = (d) => (d * ww) / (3.74 * cw); // plate diameter in css px → scene scale
+  const fit = (top, bottom, width) => {
+    const h = Math.max(120, bottom - top);
+    return { cy: top + h / 2, d: Math.min(width * 0.88, h / 0.98) };
+  };
+  let H = { fx: 0, fy: 0.04, s: k(cw * 0.78), tilt: -0.5 };
+  const slot = $('#heroSlot');
+  if (slot && slot.offsetHeight) {
+    const f = fit(slot.offsetTop + 4, slot.offsetTop + slot.offsetHeight - 4, slot.offsetWidth);
+    H = { fx: 0, fy: 0.5 - f.cy / vh, s: k(f.d), tilt: -0.5 };
+  }
+  let D = { fx: 0, fy: 0.2, s: ww / 5.4, tilt: -0.34 };
+  const copy = $('#signatures .chapter__copy');
+  if (copy) {
+    const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64;
+    const f = fit(navH + 6, copy.offsetTop - 14, innerWidth - 40);
+    D = { fx: 0, fy: 0.5 - f.cy / vh, s: k(f.d), tilt: -0.34 };
+  }
+  poseCache = { H, D, ww, vh };
+  return poseCache;
+}
+
 function placePlate() {
   if (!chapters) return;
-  const vh = innerHeight;
+  const vh = homeVH || innerHeight;
   const { plate, plate2 } = chapters;
   const progress = (r) => clamp01(-r.top / Math.max(1, r.height - vh));
   const lightNotes = (c, p) => c.notes.forEach((li, k) => li.classList.toggle('on', p * (c.notes.length + 0.4) > k + 0.2));
@@ -507,9 +538,10 @@ function placePlate() {
   });
   if (!stage) return;
   const ww = stage.world().w;
-  const wide = innerWidth > 900 && innerWidth / vh > 1.05;
-  const H = wide ? { fx: 0, fy: -0.02, s: ww / 11.4, tilt: -0.62 } : { fx: 0, fy: 0.035, s: ww / 4.5, tilt: -0.5 };
-  const D1 = wide ? { fx: -0.215, fy: 0, s: ww / 11, tilt: -0.24 } : { fx: 0, fy: 0.2, s: ww / 5.4, tilt: -0.34 };
+  const wide = innerWidth > 900; // same breakpoint as the CSS layout
+  const m = wide ? null : mobilePoses(ww);
+  const H = wide ? { fx: 0, fy: -0.02, s: ww / 11.4, tilt: -0.62 } : m.H;
+  const D1 = wide ? { fx: -0.215, fy: 0, s: ww / 11, tilt: -0.24 } : m.D;
   const D2 = wide ? { ...D1, fx: 0.215 } : D1;
   const far = { top: vh * 9, bottom: vh * 10 };
   const r1 = plate ? plate.el.getBoundingClientRect() : far;
@@ -519,7 +551,7 @@ function placePlate() {
   const b = r2 ? ease(clamp01((vh - r2.top) / vh)) : 0;
   const leave = ease(clamp01(1 - (last.bottom - vh * 0.35) / (vh * 0.65)));
   const pose = mix(mix(H, D1, a), D2, b);
-  stage.setTarget({ ...pose, fy: pose.fy + leave * 0.95, s: pose.s * (1 - leave * 0.25), flip: b, alpha: 1 - leave });
+  stage.setTarget({ ...pose, fy: pose.fy + leave * 0.95, s: pose.s * (1 - leave * 0.25), flip: wide ? b : 0, flipx: wide ? 0 : b, alpha: 1 - leave });
   leave >= 1 ? stage.stop() : stage.start();
 }
 
@@ -597,49 +629,6 @@ function initReveals() {
   $$('.reveal, .reveal-clip').forEach((el) => io.observe(el));
 }
 
-// Footer wordmark: the letters drop in and bounce, then scatter away from a cursor or finger
-// and spring back.
-let footIO = null;
-function initFooter() {
-  footIO?.disconnect();
-  const mark = $('.foot__mark');
-  if (!mark) return;
-  const letters = $$('span', mark);
-  if (reduced) return letters.forEach((l) => (l.style.opacity = 1));
-  gsap.set(letters, { opacity: 0, yPercent: -120, rotation: (i) => (i % 2 ? 1 : -1) * (12 + ((i * 7) % 14)) });
-  footIO = new IntersectionObserver(
-    ([e]) => {
-      if (!e.isIntersecting) return;
-      footIO.disconnect();
-      gsap.to(letters, { opacity: 1, yPercent: 0, rotation: 0, duration: 1.5, ease: 'bounce.out', stagger: 0.055 });
-    },
-    { threshold: 0.35 }
-  );
-  footIO.observe(mark);
-
-  const qx = letters.map((l) => gsap.quickTo(l, 'x', { duration: 0.7, ease: 'elastic.out(1, 0.4)' }));
-  const qy = letters.map((l) => gsap.quickTo(l, 'y', { duration: 0.7, ease: 'elastic.out(1, 0.4)' }));
-  const rest = () => letters.forEach((_, i) => (qx[i](0), qy[i](0)));
-  const push = (cx, cy) => {
-    const R = Math.max(130, innerWidth * 0.13);
-    letters.forEach((l, i) => {
-      const r = l.getBoundingClientRect();
-      const dx = r.left + r.width / 2 - cx;
-      const dy = r.top + r.height / 2 - cy;
-      const d = Math.hypot(dx, dy) || 1;
-      if (d < R) {
-        const f = (1 - d / R) * R * 0.6;
-        qx[i]((dx / d) * f);
-        qy[i]((dy / d) * f);
-      } else (qx[i](0), qy[i](0));
-    });
-  };
-  mark.addEventListener('pointermove', (e) => push(e.clientX, e.clientY));
-  mark.addEventListener('pointerdown', (e) => push(e.clientX, e.clientY));
-  mark.addEventListener('pointerleave', rest);
-  mark.addEventListener('pointerup', () => setTimeout(rest, 450));
-}
-
 let pars = [];
 let zooms = [];
 function collectParallax() {
@@ -690,17 +679,24 @@ function initTilt() {
 const menu = $('#menu');
 const burger = $('#burger');
 function closeMenu() {
+  if (!menu.classList.contains('open')) return;
   menu.classList.remove('open');
   burger.classList.remove('open');
+  document.body.classList.remove('menu-open');
   burger.setAttribute('aria-expanded', 'false');
   menu.setAttribute('aria-hidden', 'true');
+  lenis.start();
 }
 burger.addEventListener('click', () => {
-  const o = menu.classList.toggle('open');
-  burger.classList.toggle('open', o);
-  burger.setAttribute('aria-expanded', o);
-  menu.setAttribute('aria-hidden', !o);
+  if (menu.classList.contains('open')) return closeMenu();
+  menu.classList.add('open');
+  burger.classList.add('open');
+  document.body.classList.add('menu-open');
+  burger.setAttribute('aria-expanded', 'true');
+  menu.setAttribute('aria-hidden', 'false');
+  lenis.stop();
 });
+matchMedia('(min-width: 901px)').addEventListener('change', (e) => e.matches && closeMenu());
 
 document.addEventListener('click', (e) => {
   const add = e.target.closest('[data-add]');
@@ -714,8 +710,17 @@ document.addEventListener('click', (e) => {
   const rm = e.target.closest('[data-remove]');
   if (rm) return setQty(rm.dataset.remove, 0);
   if (e.target.closest('[data-close]')) closeDrawer();
-  if (e.target.closest('[data-open-bag]')) return openDrawer();
+  if (e.target.closest('[data-open-bag]')) {
+    closeMenu();
+    return openDrawer();
+  }
   if (e.target.closest('[data-top]')) return lenis.scrollTo(0, { duration: 1.6 });
+  const ml = e.target.closest('.menu a');
+  if (ml && !ml.dataset.scroll) {
+    const same = ml.getAttribute('href') === (location.hash || '#/');
+    closeMenu();
+    if (same) lenis.scrollTo(0, { duration: 1.2 });
+  }
   const sc = e.target.closest('[data-scroll]');
   if (sc) {
     e.preventDefault();
@@ -737,6 +742,11 @@ addEventListener('keydown', (e) => {
   }
 });
 addEventListener('hashchange', () => render());
+addEventListener('resize', () => {
+  const c = $('#stage');
+  if (c) homeVH = c.clientHeight || innerHeight;
+  poseCache = null;
+});
 
 // ── boot ────────────────────────────────────────────────────
 (async function boot() {
@@ -759,8 +769,20 @@ addEventListener('hashchange', () => render());
   const steps = [[0, 'Melting the chocolate'], [40, 'Tempering'], [78, 'Almost set'], [100, 'Ready']];
 
 
-  const TOP = 64; // liquid level when the word is full (svg units)
-  const BOTTOM = 192; // liquid level when empty
+  let TOP = 40; // liquid level when the word is full (svg units); measured from the real glyphs below
+  let BOTTOM = 196; // liquid level when empty
+  const measure = () => {
+    try {
+      // measure the real ink of the letters (not the font's line box, which has empty space below)
+      const g = document.createElement('canvas').getContext('2d');
+      g.font = '176px "Just Another Hand"';
+      const m = g.measureText('avocado&brownies');
+      if (m.actualBoundingBoxAscent > 40) {
+        TOP = 178 - m.actualBoundingBoxAscent - 16; // above the tallest letter (the "&"), with room for the ripple
+        BOTTOM = 178 + Math.max(0, m.actualBoundingBoxDescent) + 2; // right at the bottom of the letters
+      }
+    } catch {}
+  };
   const st = { v: 0, amp: 1, splash: 1, t: 0 };
   let level = BOTTOM;
   const drawLiquid = () => {
@@ -810,6 +832,8 @@ addEventListener('hashchange', () => render());
   };
 
   if (reduced) {
+    await fontsReady;
+    measure();
     st.v = 100;
     st.amp = st.splash = 0;
     level = TOP;
@@ -818,6 +842,8 @@ addEventListener('hashchange', () => render());
     return ready.then(() => setTimeout(open, 300));
   }
   await fontsReady;
+  measure();
+  level = BOTTOM;
   loader.classList.add('ready');
   loop();
   gsap.to(st, {

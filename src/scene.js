@@ -200,7 +200,7 @@ function radialTexture(stops, size = 256) {
 export function createScene(canvas, plates) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, innerWidth < 900 ? 1.5 : 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping; // keep the photograph's true colour
 
@@ -210,9 +210,9 @@ export function createScene(canvas, plates) {
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.03).texture;
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = 0.42;
 
-  const key = new THREE.DirectionalLight(0xfff0e0, 2.6);
+  const key = new THREE.DirectionalLight(0xfff0e0, 2.0);
   key.position.set(-4, 5, 7);
   scene.add(key);
   const warm = new THREE.PointLight(0xff6d25, 30, 14, 1.6); // brand-orange rim light from behind
@@ -223,8 +223,10 @@ export function createScene(canvas, plates) {
   const rig = new THREE.Group(); // where it sits on screen
   const tilt = new THREE.Group(); // lean + flip
   const spin = new THREE.Group(); // rotation about the plate's own axis
+  const flipG = new THREE.Group(); // vertical flip (phones), applied inside the lean
   rig.add(tilt);
-  tilt.add(spin);
+  tilt.add(flipG);
+  flipG.add(spin);
   scene.add(rig);
 
   // glaze: full gloss on the ceramic, softer over the food in the middle
@@ -232,7 +234,7 @@ export function createScene(canvas, plates) {
 
   const topMat = new THREE.MeshPhysicalMaterial({
     color: 0x000000, emissive: 0xffffff, roughness: 1, metalness: 0,
-    clearcoat: 1, clearcoatRoughness: 0.09, clearcoatMap: glazeMap,
+    clearcoat: 1, clearcoatRoughness: 0.17, clearcoatMap: glazeMap,
     transparent: false, side: THREE.DoubleSide,
   });
   const underMat = new THREE.MeshPhysicalMaterial({
@@ -296,7 +298,7 @@ export function createScene(canvas, plates) {
 
   // ── state ───────────────────────────────────────────────
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
-  const target = { fx: 0, fy: 0, s: 1, tilt: -0.6, flip: 0, alpha: 1 };
+  const target = { fx: 0, fy: 0, s: 1, tilt: -0.6, flip: 0, flipx: 0, alpha: 1 };
   const cur = { ...target };
   const world = { w: 10, h: 5.4 };
   let spinVel = 0.0028;
@@ -351,14 +353,15 @@ export function createScene(canvas, plates) {
   // phones: gently follow the device tilt when the browser allows it
   const onTilt = (e) => {
     if (e.gamma == null) return;
-    mouse.tx = Math.max(-1, Math.min(1, e.gamma / 30));
-    mouse.ty = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
+    // gentle: a phone held normally must not throw the light across the plate
+    mouse.tx = Math.max(-0.5, Math.min(0.5, e.gamma / 60));
+    mouse.ty = Math.max(-0.5, Math.min(0.5, (e.beta - 65) / 70));
   };
   addEventListener('deviceorientation', onTilt, { passive: true });
 
   const resize = () => {
-    const w = innerWidth;
-    const h = innerHeight;
+    const w = canvas.clientWidth || innerWidth;
+    const h = canvas.clientHeight || innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -369,25 +372,37 @@ export function createScene(canvas, plates) {
   addEventListener('resize', resize);
 
   const clock = new THREE.Clock();
+  let lastT = performance.now();
   const frame = () => {
     raf = requestAnimationFrame(frame);
     const t = clock.getElapsedTime();
-    mouse.x += (mouse.tx - mouse.x) * 0.06;
-    mouse.y += (mouse.ty - mouse.y) * 0.06;
-    for (const k in target) cur[k] = lerp(cur[k], target[k], reduced ? 1 : 0.085);
+    const nowT = performance.now();
+    const dt = Math.min(0.05, (nowT - lastT) / 1000);
+    lastT = nowT;
+    const m = 1 - Math.exp(-dt * 3.6);
+    const e = reduced ? 1 : 1 - Math.exp(-dt * 5.2);
+    mouse.x += (mouse.tx - mouse.x) * m;
+    mouse.y += (mouse.ty - mouse.y) * m;
+    for (const k in target) cur[k] = lerp(cur[k], target[k], e);
 
     spinVel += (0.0028 - spinVel) * 0.03;
     if (!reduced) spin.rotation.z -= spinVel;
 
     // flip: 0 → first plate, 1 → second plate, edge-on at 0.5
     const f = cur.flip;
-    const which = f < 0.5 ? 0 : 1;
+    const fx = cur.flipx;
+    const which = f + fx < 0.5 ? 0 : 1;
     if (which !== shown) show(which);
     tilt.rotation.y = (f < 0.5 ? f : f - 1) * Math.PI + mouse.x * 0.24;
-    tilt.rotation.x = cur.tilt + mouse.y * 0.14 + Math.sin(t * 0.6) * 0.02;
+    // vertical flip: the bottom edge swings up and over, and the other side comes round from below
+    flipG.rotation.x = -(fx < 0.5 ? fx : fx - 1) * Math.PI;
+    const turn = Math.max(f, fx); // 0 at rest, 1 when the flip is done
+    const flat = Math.abs(Math.cos(turn * Math.PI)); // 1 at rest, 0 exactly edge-on
+    tilt.rotation.x = (cur.tilt + mouse.y * 0.14) * flat + Math.sin(t * 0.6) * 0.02;
 
-    rig.position.set(cur.fx * world.w - mouse.x * 0.06, cur.fy * world.h + Math.sin(t * 0.9) * 0.045, 0);
-    rig.scale.setScalar(Math.max(0.0001, cur.s * intro.s));
+    const hop = Math.sin(Math.max(f, fx) * Math.PI); // a small lift at the middle of the flip, like a tossed coin
+    rig.position.set(cur.fx * world.w - mouse.x * 0.06, cur.fy * world.h + Math.sin(t * 0.9) * 0.045 + hop * 0.14, 0);
+    rig.scale.setScalar(Math.max(0.0001, cur.s * intro.s * (1 + hop * 0.05)));
 
     // the key light follows the cursor, so the glaze highlight glides across the rim
     key.position.set(-4 + mouse.x * 7, 5 - mouse.y * 5, 7);
