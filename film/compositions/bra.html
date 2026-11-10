@@ -1,0 +1,42 @@
+<template>
+  <style>
+    @font-face { font-family: 'Just Another Hand'; src: url('assets/fonts/jah.woff2') format('woff2'); }
+    #root { position: absolute; inset: 0; overflow: hidden; color: #fff6ea; font-family: 'Outfit', sans-serif; }
+    #bra-w { position: absolute; inset: 0; background: #000; }
+    .bra-img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; }
+    .bra-shade { position: absolute; inset: 0; }
+    .bra-eyebrow { font-size: 30px; letter-spacing: 0.26em; text-transform: uppercase; font-weight: 400; color: #fff6ea; display: flex; align-items: center; gap: 22px; }
+    .bra-eyebrow i { width: 64px; height: 2px; background: #ff6d25; display: block; }
+    .bra-h { font-weight: 300; font-size: 150px; line-height: 0.95; letter-spacing: -0.035em; }
+    .bra-s { font-family: 'Just Another Hand', cursive; color: #ff6d25; font-weight: 400; letter-spacing: 0; }
+    .bra-mask { overflow: hidden; padding: 0.1em 0.08em 0.04em 0; }
+    .bra-mask > span { display: inline-block; }
+
+    #bra-shade { background: linear-gradient(0deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 42%, rgba(0,0,0,0.05) 74%); }
+    #bra-t { position: absolute; left: 192px; bottom: 124px; display: grid; gap: 30px; }
+    #bra-t .bra-h { font-size: 176px; }
+  </style>
+  <div id="root" data-composition-id="bra" data-width="1920" data-height="1080">
+    <div id="bra-w" data-layout-allow-overflow>
+      <img id="bra-img" class="bra-img" src="assets/brownie-macro.jpg" alt="">
+      <div id="bra-shade" class="bra-shade"></div>
+      <div id="bra-t">
+        <div id="bra-e" class="bra-eyebrow"><i></i>Signature Nº 02</div>
+        <div class="bra-h">
+          <div class="bra-mask"><span id="bra-l1">Fudge, all</span></div>
+          <div class="bra-mask"><span id="bra-l2">the way <span class="bra-s" style="font-size:1.25em">through.</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#bra-w", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 0);
+      tl.fromTo("#bra-img", { scale: 1.42, yPercent: -4 }, { scale: 1.05, yPercent: 0, duration: 4.6, ease: "power2.out" }, 0);
+      tl.fromTo("#bra-e", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.8, ease: "power3.out" }, 0.5);
+      tl.fromTo(["#bra-l1", "#bra-l2"], { yPercent: 115 }, { yPercent: 0, duration: 1.2, stagger: 0.12, ease: "expo.out" }, 0.6);
+      window.__timelines["bra"] = tl;
+    })();
+  </script>
+</template>

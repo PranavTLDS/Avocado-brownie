@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+      #root { position: relative; width: 1920px; height: 1080px; background: #000; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="24.5" data-width="1920" data-height="1080">
+      <div id="open" data-composition-id="open" data-composition-src="compositions/open.html" data-start="0" data-duration="3.4" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:1"></div>
+      <div id="maga" data-composition-id="maga" data-composition-src="compositions/maga.html" data-start="3.1" data-duration="4.6" data-track-index="2" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:2"></div>
+      <div id="magb" data-composition-id="magb" data-composition-src="compositions/magb.html" data-start="7.4" data-duration="4" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:3"></div>
+      <div id="bra" data-composition-id="bra" data-composition-src="compositions/bra.html" data-start="11.1" data-duration="4.6" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:4"></div>
+      <div id="brb" data-composition-id="brb" data-composition-src="compositions/brb.html" data-start="15.4" data-duration="4.4" data-track-index="5" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:5"></div>
+      <div id="close" data-composition-id="close" data-composition-src="compositions/close.html" data-start="19.5" data-duration="5" data-track-index="6" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:6"></div>
+    </div>
+    <script>
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

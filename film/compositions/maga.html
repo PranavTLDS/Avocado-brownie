@@ -1,0 +1,47 @@
+<template>
+  <style>
+    @font-face { font-family: 'Just Another Hand'; src: url('assets/fonts/jah.woff2') format('woff2'); }
+    #root { position: absolute; inset: 0; overflow: hidden; color: #fff6ea; font-family: 'Outfit', sans-serif; }
+    #maga-w { position: absolute; inset: 0; background: #000; }
+    .maga-img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; }
+    .maga-shade { position: absolute; inset: 0; }
+    .maga-eyebrow { font-size: 30px; letter-spacing: 0.26em; text-transform: uppercase; font-weight: 400; color: #fff6ea; display: flex; align-items: center; gap: 22px; }
+    .maga-eyebrow i { width: 64px; height: 2px; background: #ff6d25; display: block; }
+    .maga-h { font-weight: 300; font-size: 150px; line-height: 0.95; letter-spacing: -0.035em; }
+    .maga-s { font-family: 'Just Another Hand', cursive; color: #ff6d25; font-weight: 400; letter-spacing: 0; }
+    .maga-mask { overflow: hidden; padding: 0.1em 0.08em 0.04em 0; }
+    .maga-mask > span { display: inline-block; }
+
+    #maga-bg { position: absolute; inset: -40px; width: calc(100% + 80px); height: calc(100% + 80px); object-fit: cover; opacity: 0.32; }
+    #maga-shade { background: linear-gradient(90deg, #000 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.55) 100%); }
+    #maga-card { position: absolute; right: 200px; top: 90px; width: 506px; height: 900px; border-radius: 30px; overflow: hidden; box-shadow: 0 40px 90px rgba(0,0,0,0.7); }
+    #maga-card img { width: 100%; height: 100%; object-fit: cover; }
+    #maga-t { position: absolute; left: 192px; top: 330px; display: grid; gap: 30px; }
+  </style>
+  <div id="root" data-composition-id="maga" data-width="1920" data-height="1080">
+    <div id="maga-w" data-layout-allow-overflow>
+      <img id="maga-bg" src="assets/mag-final.jpg" alt="">
+      <div id="maga-shade" class="maga-shade"></div>
+      <div id="maga-card"><img id="maga-img" src="assets/mag-final.jpg" alt=""></div>
+      <div id="maga-t">
+        <div id="maga-e" class="maga-eyebrow"><i></i>Our most sought-after</div>
+        <div class="maga-h">
+          <div class="maga-mask"><span id="maga-l1">The <span class="maga-s" style="font-size:1.25em">Magnum</span></span></div>
+          <div class="maga-mask"><span id="maga-l2">Cake</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#maga-w", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 0);
+      tl.fromTo("#maga-card", { yPercent: 18, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 1.3, ease: "expo.out" }, 0.1);
+      tl.fromTo("#maga-img", { scale: 1.22 }, { scale: 1.04, duration: 4.6, ease: "power1.out" }, 0);
+      tl.fromTo("#maga-bg", { scale: 1.1 }, { scale: 1, duration: 4.6, ease: "none" }, 0);
+      tl.fromTo("#maga-e", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.8, ease: "power3.out" }, 0.5);
+      tl.fromTo(["#maga-l1", "#maga-l2"], { yPercent: 115 }, { yPercent: 0, duration: 1.2, stagger: 0.12, ease: "expo.out" }, 0.6);
+      window.__timelines["maga"] = tl;
+    })();
+  </script>
+</template>
